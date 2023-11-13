@@ -1,6 +1,6 @@
 #+title: Hello World
 #+lastmod: [2023-11-13 Mon]
-#+tags[]: Emacs Hugo
+#+tags[]: Emacs Hugo Test Go Elixir Python
 
 * Título
 Sei lá
@@ -16,4 +16,66 @@ IO.inspect "hello!"
 def seila(sklj):
     with open("alksdjf") as f:
         f.close()
+#+end_src
+
+And here's a larger Go source block:
+
+#+begin_src go
+package main
+
+import (
+	"log"
+	"net"
+)
+
+type IRCServer struct {
+	newConnCh <-chan net.Conn
+	serverCh  chan Message
+	clients   []*Client
+	channels  map[string][]*Client
+	tcpServer *TCPServer
+}
+
+func NewIRCServer(host string, port int) IRCServer {
+	newConnCh := make(chan net.Conn)
+	serverCh := make(chan Message)
+	clients := make([]*Client, 0)
+	channels := make(map[string][]*Client)
+
+	tcpServer := NewTCPServer(host, port, newConnCh)
+
+	return IRCServer{
+		newConnCh: newConnCh,
+		serverCh:  serverCh,
+		clients:   clients,
+		tcpServer: &tcpServer,
+		channels:  channels,
+	}
+}
+
+// Start starts the IRC server.
+func (s *IRCServer) Start() {
+	// New connection handler
+	go func() {
+		for newConn := range s.newConnCh {
+			log.Printf("IRC Server got a new connection")
+			client := NewClient(newConn, s.serverCh)
+			s.clients = append(s.clients, &client)
+			go client.Start()
+		}
+	}()
+
+	// Main command handler
+	go func() {
+		for msg := range s.serverCh {
+			for _, client := range s.clients {
+				if client != msg.From {
+					client.Send(msg)
+				}
+			}
+		}
+	}()
+
+	s.tcpServer.Start()
+}
 #+end_src
