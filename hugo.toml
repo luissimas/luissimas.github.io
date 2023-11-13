@@ -5,7 +5,7 @@ theme = 'hugo-coder'
 defaultcontentlanguage = "en"
 
 [markup.highlight]
-style = "github-dark"
+style = "catppuccin-mocha"
 
 [params]
   author = "Luís Simas"
@@ -25,7 +25,7 @@ style = "github-dark"
   hidecolorschemetoggle = false
 
   # customCSS = ["css/custom.css"]
-  customSCSS = ["scss/custom.scss"]
+  customSCSS = ["scss/custom.scss", "scss/_variables.scss"]
   # customJS = ["js/custom.js"]
 
 [taxonomies]
