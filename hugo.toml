@@ -1,6 +1,6 @@
 baseURL = 'https://example.org/'
 languageCode = 'en-us'
-title = 'Hello World'
+title = 'Luís Simas'
 theme = 'hugo-coder'
 defaultcontentlanguage = "en"
 
@@ -13,11 +13,9 @@ style = "github-dark"
   description = "Luís Simas's personal website"
   keywords = "blog,developer,personal"
   avatarurl = "images/avatar.jpg"
-  #gravatar = "john.doe@example.com"
 
-  faviconSVG = "/img/favicon.svg"
-  favicon_32 = "/img/favicon-32x32.png"
-  favicon_16 = "/img/favicon-16x16.png"
+  favicon_32 = "fav/favicon-32x32.png"
+  favicon_16 = "fav/favicon-16x16.png"
 
   since = 2023
 
