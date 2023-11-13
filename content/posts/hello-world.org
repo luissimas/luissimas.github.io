@@ -1,0 +1,19 @@
+#+title: Hello World
+#+lastmod: [2023-11-13 Mon]
+#+tags[]: Emacs Hugo
+
+* Título
+Sei lá
+
+** Eita bixo
+Será que vai *renderizar* corretamente o org-mode?
+
+#+begin_src elixir
+IO.inspect "hello!"
+#+end_src
+
+#+begin_src python
+def seila(sklj):
+    with open("alksdjf") as f:
+        f.close()
+#+end_src
