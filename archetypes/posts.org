@@ -1,0 +1,4 @@
+#+title: {{ replace .File.ContentBaseName "-" " " | title }}
+#+date: [{{ time.Format "2006-01-02 Mon" .Date }}]
+#+lastmod: [{{ time.Format "2006-01-02 Mon" .Date }}]
+#+tags[]:
