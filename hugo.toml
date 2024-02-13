@@ -53,12 +53,31 @@ icon = "fa fa-rss-square fa-2x"
 weight = 3
 url = "/posts/index.xml"
 
-# Menu links
-[[menu.main]]
-  name = "Blog"
-  weight = 1
-  url  = "posts/"
-[[menu.main]]
-  name = "About"
-  weight = 2
-  url = "about/"
+[languages]
+  [languages.en]
+    languageCode = 'en-US'
+    languageName = ":uk:"
+  [[languages.en.menu.main]]
+    name = "Blog"
+    weight = 1
+    url  = "posts/"
+  [[languages.en.menu.main]]
+    name = "About"
+    weight = 2
+    url = "about/"
+
+  [languages.pt-br]
+    languageCode = 'pt-BR'
+    languageName = ":brazil:"
+  [[languages.pt-br.menu.main]]
+    name = "Blog"
+    weight = 1
+    url  = "posts/"
+  [[languages.pt-br.menu.main]]
+    name = "Sobre"
+    weight = 2
+    url = "about/"
+  [languages.pt-br.params]
+    info = "Tentando até dar certo"
+    description = "Site pessoal do Luís Simas"
+    keywords = "blog,desenvolvedor,pessoal"

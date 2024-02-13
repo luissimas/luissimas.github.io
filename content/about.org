@@ -15,7 +15,7 @@ This website is meant to be a place to share a few things, mostly through [[file
 ** Back-end developer, Liven Tech (2022-Present)
 Liven is a software house in São Carlos, Brasil. Our clients range from startups to big companies in a variety of domains. One of the most valuable aspects of working here is the environment that encourages me to *learn constantly* and *take ownership* of the products we ship.
 
-As a back-end developer at Liven I've worked mostly in the development of *REST APIs* in Node.js using Typescript and Clean Architecture. In the past few months I've been working a lot on *telecom platforms* in both Python and Node.js. I've also dabbled a bit with *infrastructure and application monitoring*, using mostly Prometheus and Grafana.
+As a back-end developer at Liven I've worked mostly in the development of *REST APIs* in Node.js using Typescript and Clean Architecture. In the past few months I've been working a lot on *telecom platforms* in both Python and Node.js. I've also worked with *infrastructure and application monitoring*, using mostly Prometheus and Grafana.
 
 Furthermore, my time at the company has enriched my experience with Scrum practices, which are mostly applied in a small squad working on a project with constant change and development of requirements.
 

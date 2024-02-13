@@ -1,0 +1,45 @@
+#+title: Sobre Mim
+
+Olá, eu sou Luís, um desenvolvedor de software que mora no Brasil. Sou apaixonado por várias coisas, algumas delas incluem:
+
+- Explorar sistemas Unix
+- Teclados personalizados
+- Editores de texto
+- Meu ambiente de desenvolvimento (você pode conferir meus [[https://github.com/luissimas/dotfiles][dotfiles]] se quiser)
+- Ferramentas para desenvolvedores em geral
+- Melhorar em diversas áreas
+- Aprender mais sobre linguística e filosofia
+
+A ideia desse site é ser um lugar para compartilhar algumas coisas, principalmente através dos [[file:/posts][meus blogposts]]. Essa página é principalmente um resumo da minha experiência profissional e educação. Se quiser entrar em contato ou discutir algo, pode enviar um e-mail para [[mailto:luissimas@protonmail.com][luissimas@protonmail.com]].
+
+* Experiência Profissional
+** Desenvolvedor Back-end, Liven Tech (2022-Presente)
+A Liven é uma /software house/ em São Carlos, Brasil. Nossos clientes vão de startups a grandes empresas em diversas áreas. Um dos aspectos mais valiosos de trabalhar aqui é o ambiente que me incentiva a *aprender constantemente* e *assumir responsabilidade* pelos produtos que entregamos.
+
+Como desenvolvedor back-end na Liven, trabalhei principalmente no desenvolvimento de *APIs REST* em Node.js usando Typescript e Clean Architecture. Nos últimos meses, tenho trabalhado bastante em *plataformas de telecomunicações* em Python e Node.js. Também trabalhei com *monitoramento de infraestrutura e aplicativos*, usando principalmente Prometheus e Grafana.
+
+Além disso, meu tempo na empresa enriqueceu minha experiência com práticas Scrum, que são principalmente aplicadas em uma pequena equipe trabalhando em um projeto com mudanças constantes e desenvolvimento de requisitos.
+
+O ambiente de trabalho me permitiu iniciar um *grupo de estudo de programação funcional* com meus colegas de trabalho. Juntos, desenvolvemos uma ferramenta interna usando Elixir e Phoenix LiveView. Essa foi provavelmente a experiência que despertou meu interesse em *desenvolver ferramentas internas*.
+
+** Desenvolvedor de Software Freelancer, Upwork (2023-Presente)
+Em 2023, comecei a trabalhar em alguns projetos esporadicamente como freelancer. Senti que precisava de mais experiência *lidando diretamente com clientes*. No geral, tem sido uma ótima experiência; fiz algumas ferramentas e migrações de serviços e bancos de dados. É uma sensação muito gratificante poder *entregar valor* por meio de um projeto completo e receber feedback diretamente do cliente.
+
+** Desenvolvedor de Software, CATI Jr (2021-2023)
+No início da minha graduação, participei de uma *empresa júnior* focada no desenvolvimento de soluções de software para empresas locais chamada CATI Jr. A maior parte do meu trabalho consistia no desenvolvimento de *APIs REST em Node.js*, o que me introduziu à gestão de projetos, padrões, documentação e *práticas Scrum*.
+
+Na CATI Jr, tínhamos um problema recorrente de baixa retenção de conhecimento na empresa. Conseguimos colaborar na *melhoria* tanto da *documentação interna* quanto da cultura da empresa de compartilhar conhecimento.
+
+* Educação
+** Introdução à Programação Funcional (2021)
+Participei de um curso extracurricular da [[https://www.utfpr.edu.br/][UTFPR]] aberto à comunidade no qual tive a oportunidade de conhecer pessoas de diferentes países e aprender muito sobre os fundamentos da *programação funcional*.
+
+Durante esse curso [[https://github.com/luissimas/analytic_tableaux][implementei]] um método de prova de argumentos lógicos clássicos conhecido como /Analytic Tableaux/ usando Elixir, incluindo um simples analisador lógico proposicional usando as bibliotecas leex e yecc do Erlang.
+
+Além disso, [[https://youtu.be/rTL4TtpdjIE?t=1573][apresentei uma palestra]] sobre os conceitos básicos de OCaml e as vantagens de se trabalhar com tipos algébricos e /pattern matching/ em uma linguagem tipada estaticamente.
+
+** Bacharelado em Ciência da Computação (2020-Presente)
+Atualmente, sou estudante de graduação em ciência da computação, participando ativamente de atividades extracurriculares e *grupos de extensão*. Também tem sido uma ótima oportunidade para aprender mais sobre outras áreas de interesse, principalmente lógica e matemática.
+
+** Ensino Médio e Certificação Técnica (2017-2019)
+Frequentei um ensino médio que incluía um curso técnico integrado em desenvolvimento de software. Durante esse período, tive a oportunidade não apenas de *construir bases técnicas sólidas*, mas também de participar de atividades extracurriculares, principalmente em *eventos culturais*.
