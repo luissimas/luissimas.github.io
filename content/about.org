@@ -33,6 +33,10 @@ I've attended to a [[https://www.utfpr.edu.br/][UTFPR]] extracurricular course o
 During this course I’ve [[https://github.com/luissimas/analytic_tableaux][implemented]] a method of proving classical logic arguments know as Analytic Tableaux using Elixir, including a simple propositional logic parser using the Erlang libraries leex and yecc.
 
 Besides that, I’ve [[https://youtu.be/rTL4TtpdjIE?t=1573][presented a talk]] about the basics of OCaml and the joy of working with algebraic data types and pattern matching on a statically typed language.
+** Pragmatic Studio Courses (2023-2024)
+I took two great courses on [[https://pragmaticstudio.com/][Pragmatic Studio]] focusing on Elixir/OTP and Phoenix LiveView. With these courses I was able to fully grasp the core concepts in Elixir and OTP and develop a series of interactive UIs using Phoenix Liveview.
+
+You can check out my certificates of conclusion at my [[https://pragmaticstudio.com/alumni/lu%C3%ADs-simas-l-sv][alumni page]].
 ** Computer Science bachelor (2020-Present)
 I’m currently a undergraduate student in computer science, actively engaging in extracurricular activities and *extension groups*. It’s also been a great opportunity to learn more about other areas that I’m interested in, mostly logic and mathematics.
 ** High School & Technical Certification (2017-2019)

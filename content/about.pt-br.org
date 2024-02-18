@@ -1,12 +1,12 @@
 #+title: Sobre Mim
 
-Olá, eu sou Luís, um desenvolvedor de software que mora no Brasil. Sou apaixonado por várias coisas, algumas delas incluem:
+Oi! Meu nome é Luís e trabalho como desenvolvedor de software. Sou apaixonado por várias coisas, algumas delas incluem:
 
 - Explorar sistemas Unix
 - Teclados personalizados
 - Editores de texto
 - Meu ambiente de desenvolvimento (você pode conferir meus [[https://github.com/luissimas/dotfiles][dotfiles]] se quiser)
-- Ferramentas para desenvolvedores em geral
+- Developer tooling em geral
 - Melhorar em diversas áreas
 - Aprender mais sobre linguística e filosofia
 
@@ -16,7 +16,7 @@ A ideia desse site é ser um lugar para compartilhar algumas coisas, principalme
 ** Desenvolvedor Back-end, Liven Tech (2022-Presente)
 A Liven é uma /software house/ em São Carlos, Brasil. Nossos clientes vão de startups a grandes empresas em diversas áreas. Um dos aspectos mais valiosos de trabalhar aqui é o ambiente que me incentiva a *aprender constantemente* e *assumir responsabilidade* pelos produtos que entregamos.
 
-Como desenvolvedor back-end na Liven, trabalhei principalmente no desenvolvimento de *APIs REST* em Node.js usando Typescript e Clean Architecture. Nos últimos meses, tenho trabalhado bastante em *plataformas de telecomunicações* em Python e Node.js. Também trabalhei com *monitoramento de infraestrutura e aplicativos*, usando principalmente Prometheus e Grafana.
+Como desenvolvedor back-end na Liven, trabalhei principalmente no desenvolvimento de *APIs REST* em Node.js usando Typescript e Clean Architecture. Nos últimos meses, tenho trabalhado bastante em *plataformas de telecomunicações* em Python e Node.js. Também trabalhei com *monitoramento de infraestrutura e aplicações*, usando principalmente Prometheus e Grafana.
 
 Além disso, meu tempo na empresa enriqueceu minha experiência com práticas Scrum, que são principalmente aplicadas em uma pequena equipe trabalhando em um projeto com mudanças constantes e desenvolvimento de requisitos.
 
@@ -31,6 +31,10 @@ No início da minha graduação, participei de uma *empresa júnior* focada no d
 Na CATI Jr, tínhamos um problema recorrente de baixa retenção de conhecimento na empresa. Conseguimos colaborar na *melhoria* tanto da *documentação interna* quanto da cultura da empresa de compartilhar conhecimento.
 
 * Educação
+** Cursos Pragmatic Studio (2023-2024)
+Realizei dois cursos na plataforma [[https://pragmaticstudio.com/][Pragmatic Studio]] focados em Elixir/OTP e Phoenix LiveView. Nesses cursos tive a oportunidade de aprender os fundamentos de OTP com Elixir e também desenvolver diversas UIs interativas utilizando Phoenix LiveView.
+
+Os certificados de conclusão estão disponíveis na minha [[https://pragmaticstudio.com/alumni/lu%C3%ADs-simas-l-sv][página de aluno]].
 ** Introdução à Programação Funcional (2021)
 Participei de um curso extracurricular da [[https://www.utfpr.edu.br/][UTFPR]] aberto à comunidade no qual tive a oportunidade de conhecer pessoas de diferentes países e aprender muito sobre os fundamentos da *programação funcional*.
 
