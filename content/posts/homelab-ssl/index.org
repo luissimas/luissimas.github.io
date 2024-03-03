@@ -1,9 +1,9 @@
 #+title: Wildcard SSL certificates in the homelab
 #+date: <2024-03-01 Fri>
-#+lastmod: [2024-03-01 Fri]
+#+lastmod: [2024-03-03 Sun]
 #+tags[]: homelab
 
-Recently I've been messing around with my homelab and I wanted to setup a custom domain and wildcard SSL certificates for all my services. I also didn't want to expose any services to the internet, so a traditional HTTP-01 ACME challenge was out of the question.
+Lately I've been messing around with my homelab and I wanted to setup a custom domain and wildcard SSL certificates for all my services. I also didn't want to expose any services to the internet, so a traditional HTTP-01 ACME challenge was out of the question.
 
 I've come across this [[https://notthebe.ee/blog/easy-ssl-in-homelab-dns01/][excelent blogpost]] by Wolfgang that explains an approach using the DNS-01 ACME challenge to eliminate the need for exposing any services to the internet. I tried it and it worked out great, but I wanted to use [[https://caddyserver.com/][Caddy]] as a reverse proxy, as I find it easier to configure and reproduce than [[https://nginxproxymanager.com/][Nginx Proxy Manager]]. I fiddled a bit with Caddy's configuration and landed on a setup that I'm quite happy with, and that's what I'll share with you in this post.
 
@@ -13,17 +13,17 @@ In this guide I'll assume that you already have a Linux distribution with Docker
 * How does it work?
 In a traditional HTTPS-01 challenge, Let's Encrypt gives a token to the ACME client that stores it on the server with an account key. Once the file is ready, Let's Encrypt tries to retrieve it by making an HTTP request to the server. If the response is valid, the certificate is issued successfully. Note that this requires your server to be exposed to the internet so that Let's Encrypt can make an HTTP request to it. Also not that this method does not allow issuing of wildcard certificates.
 
-To circumvent those limitations we can use the DNS-01 challenge. This challenge works by putting a specific value in a TXT record under your domain name. Let's encrypt gives a token to the ACME client. The ACME client then creates a TXT record derived from that token and an account key and puts that record at =_acme-challenge.<YOUR_DOMAIN>=. Let's Encrypt can then query the DNS system for that record, and if it find a match the certificate can be issued successfully. Note that in this method there's no need to expose the server to the internet.
+To circumvent those limitations we can use the DNS-01 challenge. This challenge works by putting a specific value in a TXT record under your domain name. Let's encrypt gives a token to the ACME client. The ACME client then creates a TXT record derived from that token and an account key and puts that record at =_acme-challenge.<YOUR_DOMAIN>=. Let's Encrypt can then query the DNS system for that record, and if it find a match the certificate can be issued successfully. The nice thing about this method is that there's no need to expose the server to the internet.
 
 If you wanna know more about the different types of ACME challenges I highly recommend Let's Encrypt's [[https://letsencrypt.org/docs/challenge-types/][documentation]] on the subject. I learned most of this stuff from there.
 
 * Setting up the DNS record
-The first step is to get a domain name and point that domain to our server's *local IP address*. There are several domain name providers out there, but a good and free option is [[https://www.duckdns.org/][DuckDNS]]. That's what I'm currently using in my homelab, so I'll be using it for this guide. Keep in mind that you could use any domain name provider, as long as it supports DNS-01 challenges.
+The first step is to get a domain name and point that domain to our server's *local IP address*. There are several domain name providers out there, but a good and free option is [[https://www.duckdns.org/][Duck DNS]]. That's what I'm currently using in my homelab, so I'll be using it for this guide. Keep in mind that you could use any domain name provider, as long as it supports DNS-01 challenges.
 
-#+attr_html: alt: DuckDNS web page
+#+attr_html: alt: Duck DNS web page
 [[file:duckdns.png]]
 
-Take note of your DuckDNS token. We'll be using it to configure Caddy in the next step.
+Take note of your Duck DNS token. We'll be using it to configure Caddy in the next step.
 
 * Directory structure
 In this guide we'll be running a couple of services using =docker compose=. The directory structure should look like this:
@@ -42,7 +42,7 @@ We'll use Caddy's [[https://hub.docker.com/_/caddy][official Docker image]] to s
 
 Caddy has the concept of [[https://caddyserver.com/docs/modules/][modules]] that are basically plugins to extend it's functionality. There are several modules that provide integration with different DNS providers under the [[https://github.com/caddy-dns][caddy-dns]] GitHub organization. We'll use the [[https://github.com/caddy-dns/duckdns][duckdns module]] since that's the DNS provider we're using in this guide, but you could choose another module according to your DNS provider.
 
-To use Caddy modules we must build a custom binary using the [[https://github.com/caddyserver/xcaddy][xcaddy]] tool. Luckily, Caddy provides a docker image under the =<version>-builder= tag that helps us build custom Docker images with the modules we need. We'll setup our =Dockerfile= as follows:
+To use Caddy modules we must build a custom binary using the [[https://github.com/caddyserver/xcaddy][xcaddy]] tool. Luckily, Caddy provides a Docker image under the =<version>-builder= tag that helps us build custom Docker images with the modules we need. We'll setup our =Dockerfile= as follows:
 
 #+begin_src dockerfile
 FROM caddy:2-builder AS builder
@@ -86,7 +86,7 @@ ssl-blog-demo.duckdns.org {
 
 In this example Caddy will automatically request and maintain a certificate for =ssl-blog-demo.duckdns.org= and a wildcard certificate for =*.ssl-blog-demo.duckdns.org=. We define the reverse proxy rules using the host of the requests to match our service's port on the local machine. Also note that we reference a =DUCKDNS_API_TOKEN= environment variable, so we don't need to expose this information in the configuration file.
 
-Next, we declare our services using a docker compose file. Note that we specify the =DUCKDNS_API_TOKEN= environment variable in the =caddy= service. You should set this variable to the token value available in the DuckDNS web page.
+Next, we declare our services using a docker compose file. Note that we specify the =DUCKDNS_API_TOKEN= environment variable in the =caddy= service. You should set this variable to the token value available in the Duck DNS web page.
 
 It's also important to mount a persistent volume to the path =/data= on the =caddy= service, since it's where the certificate files are stored and we don't want to loose them if the container is recreated.
 
@@ -143,7 +143,7 @@ services:
 
 And that's it! Running =docker compose up= in the current directory should bring up all the services and we should be able to access them using our domain and check that we have valid SSL certificates.
 
-Accessing the =ssl-blog-demo.duckdns.org= URL we can verify that the request is proxied to our local server and the SSL certificate is valid.
+Accessing the =ssl-blog-demo.duckdns.org= URL we can verify that the request is proxied to the homepage service, and the SSL certificate is valid.
 
 #+attr_html: alt: Homepage with a valid SSL certificate
 [[file:homepage.jpeg]]
