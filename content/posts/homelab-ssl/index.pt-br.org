@@ -1,11 +1,11 @@
 #+title: Certificados SSL wildcard no homelab
 #+date: <2024-03-01 Fri>
-#+lastmod: [2024-03-03 Sun]
+#+lastmod: [2024-03-26 ter]
 #+tags[]: homelab
 
-Ultimamente tenho mexido no meu homelab e queria configurar um domínio personalizado com certificados SSL wildcarded para todos os meus serviços. Além disso, não queria expor nenhum serviço à internet, então um ACME challenge HTTP-01 tradicional não ia servir.
+Ultimamente tenho mexido no meu homelab e queria configurar um domínio personalizado com certificados SSL wildcard para todos os meus serviços. Além disso, não queria expor nenhum dos serviços à internet, então um desafio ACME HTTP-01 tradicional não ia servir.
 
-Me deparei com este [[https://notthebe.ee/blog/easy-ssl-in-homelab-dns01/][excelente post no blog]] do Wolfgang, que explica uma abordagem usando o desafio ACME DNS-01 para eliminar a necessidade de expor qualquer serviço à internet. Testei e funcionou muito bem, mas queria usar o [[https://caddyserver.com/][Caddy]] como um proxy reverso, porque acho mais fácil configurar e reproduzir do que o [[https://nginxproxymanager.com/][Nginx Proxy Manager]]. Mexi um pouco na configuração do Caddy e cheguei a uma configuração com a qual estou bastante satisfeito, e é isso que vou compartilhar neste post.
+Me deparei com este [[https://notthebe.ee/blog/easy-ssl-in-homelab-dns01/][excelente blogpost]] do Wolfgang, que explica uma abordagem usando o desafio ACME DNS-01 para eliminar a necessidade de expor qualquer serviço à internet. Testei e funcionou muito bem, mas queria usar o [[https://caddyserver.com/][Caddy]] como um proxy reverso, porque acho mais fácil configurar e reproduzir do que o [[https://nginxproxymanager.com/][Nginx Proxy Manager]]. Mexi um pouco na configuração do Caddy e cheguei a uma configuração com a qual estou bastante satisfeito, e é isso que vou compartilhar neste post.
 
 * Pré-requisitos
 Nesse guia vou assumir que você já tem uma distribuição Linux com Docker instalado no seu home server. Estou usando o Ubuntu Server 22.04.3 LTS e o Docker version 25.0.3, mas qualquer distribuição Linux com uma versão razoavelmente recente do Docker deve ser suficiente. Também vou presumir que você está um pouco familiarizado com a linha de comando e com o funcionamento do Docker, HTTP e portas de rede.
@@ -15,18 +15,18 @@ Num desafio HTTPS-01 tradicional, o Let's Encrypt fornece um token ao cliente AC
 
 Para contornar essas limitações, podemos usar o desafio DNS-01. Esse desafio funciona colocando um valor específico em um registro TXT sob o seu nome de domínio. O Let's Encrypt fornece um token ao cliente ACME. O cliente ACME então cria um registro TXT derivado desse token e uma chave de conta e coloca esse registro em =_acme-challenge.<SEU_DOMÍNIO>=. O Let's Encrypt pode então consultar o sistema DNS para esse registro e, se encontrar correspondência, o certificado pode ser emitido com sucesso. O interessante desse método é que não é necessário expor o servidor à internet.
 
-Se você quiser saber mais sobre os diferentes tipos de ACME challenges, recomendo fortemente a [[https://letsencrypt.org/docs/challenge-types/][documentação]] do Let's Encrypt sobre o assunto. Aprendi a maior parte dessas informações lá.
+Se você quiser saber mais sobre os diferentes tipos de desafios ACME, recomendo fortemente a [[https://letsencrypt.org/docs/challenge-types/][documentação]] do Let's Encrypt sobre o assunto. Aprendi a maior parte dessas informações lá.
 
 * Configurando o registro DNS
-O primeiro passo é obter um nome de domínio e apontar esse domínio para o *endereço IP local* do nosso servidor. Existem vários provedores de nomes de domínio por aí, mas uma opção boa e gratuita é o [[https://www.duckdns.org/][Duck DNS]]. Tenho usado Estou usando ele atualmente no meu homelab, então vou usá-lo neste guia. Lembre-se de que você poderia usar qualquer provedor de DNS, desde que ele suporte challenges DNS-01.
+O primeiro passo é obter um nome de domínio e apontar esse domínio para o *endereço IP local* do nosso servidor. Existem vários provedores de nomes de domínio por aí, mas uma opção boa e gratuita é o [[https://www.duckdns.org/][Duck DNS]]. Tenho tido uma boa experiência usando ele no meu homelab, então vou usá-lo neste guia. Caso prefira, você pode usar qualquer provedor de DNS, desde que ele suporte desafios DNS-01.
 
 #+attr_html: alt: Página do Duck DNS
 [[file:duckdns.png]]
 
 Anote o seu token Duck DNS. Vamos usá-lo para configurar o Caddy na próxima etapa.
 
-* Estrutura do diretório
-Neste guia, executaremos alguns serviços usando =docker compose=. A estrutura de diretórios deve ficar assim:
+* Estrutura de diretórios
+Neste guia, vamos rodar alguns serviços usando =docker compose=. A estrutura de diretórios deve ficar assim:
 
 #+begin_src text
 .
@@ -42,7 +42,7 @@ Usaremos a [[https://hub.docker.com/_/caddy][imagem Docker oficial]] do Caddy pa
 
 O Caddy tem o conceito de [[https://caddyserver.com/docs/modules/][módulos]] que são basicamente plugins para estender sua funcionalidade. Existem vários módulos que fornecem integração com diferentes provedores DNS sob a organização [[https://github.com/caddy-dns][caddy-dns]] no GitHub. Vamos usar o [[https://github.com/caddy-dns/duckdns][módulo duckdns]] porque é o provedor DNS que estamos usando neste guia, mas você pode escolher outro módulo de acordo com o seu provedor DNS.
 
-Para usar os módulos do Caddy, precisamos construir um binário personalizado usando a ferramenta [[https://github.com/caddyserver/xcaddy][xcaddy]]. Felizmente, o Caddy fornece uma imagem Docker sob a tag =<versão>-builder= que nos ajuda a construir imagens Docker personalizadas com os módulos de que precisamos. Vamos configurar nosso =Dockerfile= da seguinte forma:
+Para usar os módulos do Caddy, precisamos construir um binário personalizado usando a ferramenta [[https://github.com/caddyserver/xcaddy][xcaddy]]. Felizmente, o Caddy fornece uma imagem Docker sob a tag =<versão>-builder= que nos ajuda a construir imagens Docker personalizadas com os módulos de que precisamos. Vamos definir nosso =Dockerfile= da seguinte forma:
 
 #+begin_src dockerfile
 FROM caddy:2-builder AS builder
@@ -54,7 +54,7 @@ FROM caddy:2
 COPY --from=builder /usr/bin/caddy /usr/bin/caddy
 #+end_src
 
-Usamos uma [[https://docs.docker.com/build/building/multi-stage/][multi-stage build]] que constrói nosso binário personalizado com o módulo duckdns e o copia para a imagem Docker padrão. Isso garante que a imagem final não contenha dependências de compilação, para que possamos mantê-la enxuta em tamanho.
+Usamos uma [[https://docs.docker.com/build/building/multi-stage/][multi-stage build]] que constrói nosso binário personalizado com o módulo duckdns e o copia para a imagem Docker padrão. Isso garante que a imagem final não contenha dependências de build, reduzindo seu tamanho.
 
 Em seguida, precisamos configurar nosso =Caddyfile= para que o Caddy gerencie os certificados para nossos domínios usando o módulo duckdns e atue como um proxy reverso para nossos serviços. Neste exemplo, quero acessar meu serviço [[https://gethomepage.dev/latest/][homepage]] usando o domínio ssl-blog-demo.duckdns.org e acessar meus outros serviços usando os subdomínios *.ssl-blog-demo.duckdns.org.
 
@@ -86,7 +86,9 @@ ssl-blog-demo.duckdns.org {
 
 Neste exemplo, o Caddy vai solicitar e gerenciar automaticamente um certificado para =ssl-blog-demo.duckdns.org= e um certificado wildcarded para =*.ssl-blog-demo.duckdns.org=. Definimos as regras do proxy reverso usando o host das requisições para corresponder à porta do serviço na máquina local. Observe também que fazemos referência a uma variável de ambiente =DUCKDNS_API_TOKEN=, para que não precisemos expor essa informação no arquivo de configuração.
 
-Em seguida, declaramos nossos serviços usando um arquivo docker compose. Observe que especificamos a variável de ambiente =DUCKDNS_API_TOKEN= no serviço =caddy=. Você deve definir essa variável com o valor do token disponível na página web do Duck DNS.
+Em seguida, declaramos nossos serviços usando um arquivo docker compose. Eu preparei um =docker-compose.yaml= de exemplo para esse guia com alguns serviços apenas para fins de demonstração. O nosso principal foco de atenção é o serviço =caddy=.
+
+Note que especificamos a variável de ambiente =DUCKDNS_API_TOKEN= no serviço =caddy=. Você deve configurar essa variável com o valor do token do Duck DNS que foi obtido no primeiro passo desse guia.
 
 Também é importante montar um volume persistente no caminho =/data= no serviço =caddy=, pois é onde os arquivos de certificado são armazenados e não queremos perdê-los se o contêiner for recriado.
 
