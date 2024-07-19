@@ -12,7 +12,7 @@ No final do dia, essas novas ideias e atividades são apenas **distrações dos 
 
 ![O efeito da shiny object syndrome no progresso](image.png)
 
-Uma das causas disso é o FOMO (Fear of missing out): sempre queremos estar atualizados com as ideias mais recentes e incríveis. Mas acho que outra e talvez mais profunda motivação para essa condição é que **queremos sentir a sensação de realização de começar algo novo** (o pico do "Monte Estúpido" no Efeito Dunning-Kruger), mas não gostamos do desconforto dos platôs e dificuldades que surgem quando nos aprofundamos um pouco mais em qualquer assunto. Então, para evitar esse desconforto, desistimos cedo de nossas empreitadas para começar alguma outra atividade e imediatamente obter aquela gratificação de iniciante.
+Uma das causas disso é o FOMO (Fear of missing out): sempre queremos estar atualizados com as ideias mais recentes e empolgantes. Mas acho que outra e talvez mais profunda motivação para essa condição é que **queremos sentir a sensação de realização de começar algo novo** (o pico do "Monte Estúpido" no Efeito Dunning-Kruger), mas não gostamos do desconforto dos platôs e dificuldades que surgem quando nos aprofundamos um pouco mais em qualquer assunto. Então, para evitar esse desconforto, desistimos cedo de nossas empreitadas para começar alguma outra atividade e imediatamente obter aquela gratificação de iniciante.
 
 Esse fenômeno pode ser observado em todas as áreas da vida. Alguns exemplos são:
 
