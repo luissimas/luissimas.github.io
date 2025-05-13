@@ -45,7 +45,7 @@ style = "catppuccin-mocha"
 name = "LinkedIn"
 icon = "fa fa-2x fa-linkedin"
 weight = 2
-url = "https://www.linkedin.com/in/lu%C3%ADs-augusto-simas-do-nascimento-966564212"
+url = "https://www.linkedin.com/in/luis-simas"
 
 [[params.social]]
 name = "RSS"
