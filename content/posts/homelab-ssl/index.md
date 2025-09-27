@@ -9,11 +9,11 @@ Lately I've been messing around with my homelab and I wanted to setup a custom d
 
 I've come across this [excelent blogpost](https://notthebe.ee/blog/easy-ssl-in-homelab-dns01/) by Wolfgang that explains an approach using the DNS-01 ACME challenge to eliminate the need for exposing any services to the internet. I tried it and it worked out great, but I wanted to use [Caddy](https://caddyserver.com/) as a reverse proxy, as I find it easier to configure and reproduce than [Nginx Proxy Manager](https://nginxproxymanager.com/). I fiddled a bit with Caddy's configuration and landed on a setup that I'm quite happy with, and that's what I'll share with you in this post.
 
-# Pre-requisites
+## Pre-requisites
 
 In this guide I'll assume that you already have a Linux distribution with Docker installed in your home server. I'm using Ubuntu Server 22.04.3 LTS and Docker version 25.0.3, but any Linux distro with a reasonably recent version of Docker should suffice. I'll also assume that you're somewhat familiar with the command line and with how Docker, HTTP and network ports work.
 
-# How does it work?
+## How does it work?
 
 In a traditional HTTPS-01 challenge, Let's Encrypt gives a token to the ACME client that stores it on the server with an account key. Once the file is ready, Let's Encrypt tries to retrieve it by making an HTTP request to the server. If the response is valid, the certificate is issued successfully. Note that this requires your server to be exposed to the internet so that Let's Encrypt can make an HTTP request to it. Also note that this method does not allow the issuing of wildcard certificates.
 
@@ -21,7 +21,7 @@ To circumvent those limitations we can use the DNS-01 challenge. This challenge 
 
 If you wanna know more about the different types of ACME challenges I highly recommend Let's Encrypt's [documentation](https://letsencrypt.org/docs/challenge-types/) on the subject. I learned most of this stuff from there.
 
-# Setting up the DNS record
+## Setting up the DNS record
 
 The first step is to get a domain name and point that domain to our server's **local IP address**. There are several domain name providers out there, but a good and free option is [Duck DNS](https://www.duckdns.org/). That's what I'm currently using in my homelab, so I'll be using it for this guide. Keep in mind that you could use any domain name provider, as long as it supports DNS-01 challenges.
 
@@ -29,7 +29,7 @@ The first step is to get a domain name and point that domain to our server's **l
 
 Take note of your Duck DNS token. We'll be using it to configure Caddy in the next step.
 
-# Directory structure
+## Directory structure
 
 In this guide we'll be running a couple of services using `docker compose`. The directory structure should look like this:
 
@@ -42,7 +42,7 @@ In this guide we'll be running a couple of services using `docker compose`. The 
 └── homepage
 ```
 
-# Setting up Caddy
+## Setting up Caddy
 
 We'll use Caddy's [official Docker image](https://hub.docker.com/_/caddy) to setup and run our reverse proxy.
 

@@ -6,11 +6,16 @@ theme: hextra
 params:
   navbar:
     displayLogo: false
+  blog:
+    list:
+      displayTags: true
+  toc:
+    displayTags: true
 
 menu:
   main:
-    - name: Blog
-      pageRef: /blog
+    - name: Posts
+      pageRef: /posts
       weight: 1
     - name: About
       pageRef: /about

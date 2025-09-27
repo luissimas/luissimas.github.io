@@ -24,7 +24,7 @@ The most important thing to overcome this condition is to accept that we **canno
 
 > Just stick with it long enough and you'll see why you started it in the first place.
 
-# References
+## References
 
 https://en.wikipedia.org/wiki/Shiny_object_syndrome
 
