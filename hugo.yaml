@@ -24,7 +24,7 @@ params:
 menu:
   main:
     - name: Posts
-      pageRef: /posts
+      pageRef: /blog
       weight: 1
     - name: About
       pageRef: /about
@@ -43,3 +43,8 @@ menu:
       url: "https://www.linkedin.com/in/luis-simas"
       params:
         icon: linkedin
+
+markup:
+  goldmark:
+    renderer:
+      unsafe: true
