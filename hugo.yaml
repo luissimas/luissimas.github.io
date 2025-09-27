@@ -3,15 +3,6 @@ languageCode: en-us
 title: Luís Simas
 theme: hextra
 
-defaultContentLanguage: en
-languages:
-  en:
-    languageName: English
-    weight: 1
-  pt-br:
-    languageName: Português
-    weight: 2
-
 params:
   navbar:
     displayLogo: false
