@@ -47,7 +47,7 @@ At Magalu Cloud, I've worked on foundation systems and infrastructure that power
 - Developed automation solutions for deploying and operating critical infrastructure services
 - Contributed new features and bug fixes to open source projects such as Incus and Juju. Most notability, I've co-authored the [implementation](https://github.com/lxc/incus/pull/1621) of the [LINSTOR storage driver](https://linuxcontainers.org/incus/docs/main/reference/storage_linstor)
 
-### Software developer freelancer, Upwork (2023-2025)
+### Software developer freelancer, Upwork (2023-2024)
 
 I've worked as a freelancer for some time because I wanted to experience direct contact with the end customer. I've delivered several end-to-end solutions, some of them are:
 

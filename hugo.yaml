@@ -11,6 +11,15 @@ params:
       displayTags: true
   toc:
     displayTags: true
+  comments:
+    enable: false
+    type: giscus
+
+    giscus:
+      repo: "luissimas/luissimas.github.io"
+      repoId: R_kgDOKs-3vQ
+      category: Announcements
+      categoryId: DIC_kwDOKs-3vc4Cv9e-
 
 menu:
   main:

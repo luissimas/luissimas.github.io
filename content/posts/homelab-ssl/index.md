@@ -1,6 +1,7 @@
 ---
 title: 'Wildcard SSL certificates in the homelab'
 date: '2024-03-01'
+comments: true
 tags:
   - homelab
 ---

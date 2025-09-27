@@ -1,6 +1,7 @@
 ---
 title: 'Shiny Object Syndrome'
 date: '2024-07-17'
+comments: true
 tags: []
 ---
 
