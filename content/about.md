@@ -6,7 +6,6 @@ I'm Luís, a backend focused software developer living in Brasil 🇧🇷. I'm v
 
 - Custom keyboards
 - Text editors
-- My computer environment (you can check my [dotfiles](https://github.com/luissimas/dotfiles) if you want)
 - Developer tooling in general
 - Getting better at stuff
 - Learn more about linguistics and philosophy
@@ -17,6 +16,9 @@ This website is meant to be a place to share a few things, in the form of blog p
 
 At a high level, these are the skills I'm most comfortable with and use in my day to day:
 
+- Kotlin
+- Spring Boot
+- Kafka
 - Go
 - Python
 - Node.js (TypeScript and JavaScript)
@@ -33,26 +35,25 @@ At a high level, these are the skills I'm most comfortable with and use in my da
 
 ## Professional experience
 
-### Researcher (Volunteer), Grupo de Sistemas Distribuídos e Redes (UFSCar) (2024-Present)
+### Software engineer, QuintoAndar (2025-Present)
 
-This research group is focused in researching and developing software that plays a key role in the foundation of public clouds. In my time as a volunteer researcher, I led a research team focused in automating the deployment and operations of [Incus](https://github.com/lxc/incus) in bare metal servers using Juju and MAAS. Besides that, I've also contributed new features to the Incus project.
+I'm currently working in the fintech area of QuintoAndar. My work today is mostly composed of building back-end systems using Kotlin, Spring Boot, PostgreSQL, Kafka and AWS.
 
-### Cloud developer, Luizalabs (Magalu Cloud) (2024-Present)
+### Cloud developer, Luizalabs (Magalu Cloud) (2024-2025)
 
-I'm currently working at Luizalabs building Magalu Cloud: the first brazilian public cloud with multiple data centers. Although still a developer, I'm now involved in a wider range of topics that go from underlying hardware infrastructure to internal developer tooling. During my time here, I work mostly on the following:
+At Magalu Cloud, I've worked on foundation systems and infrastructure that power the cloud platform. During my time here, I've:
 
-- Designing and implementing processes for test, validation and release via CI/CD pipelines
-- Implementing and maintaining libraries and tools to improve the internal developer experience
-- Contributing new features and bug fixes to open source projects such as Incus and Juju using Go
-- Developing automation solutions for deploying and operating critical services
+- Designed and implemented processes for test, validation, and release via CI/CD pipelines
+- Developed automation solutions for deploying and operating critical infrastructure services
+- Contributed new features and bug fixes to open source projects such as Incus and Juju. Most notability, I've co-authored the [implementation](https://github.com/lxc/incus/pull/1621) of the [LINSTOR storage driver](https://linuxcontainers.org/incus/docs/main/reference/storage_linstor)
 
-### Software developer freelancer, Upwork (2023-Present)
+### Software developer freelancer, Upwork (2023-2025)
 
-In 2023 I started to work on a few projects sporadically as a freelancer. I felt that I needed more experience **dealing directly with clients**. It's very rewarding to be able to **deliver value** by means of a complete project and get feedback directly from the client. During my time as a freelancer, I've done some work in:
+I've worked as a freelancer for some time because I wanted to experience direct contact with the end customer. I've delivered several end-to-end solutions, some of them are:
 
-- Migrating production databases with several GiB of data
-- Designing and implementing cloud solutions using GCP services
-- Creating CLIs and automations using Node.js
+- Migrated production MongoDB database with 20+ GiB of data
+- Designed and implemented serverless cloud architectures in GCP
+- Created automations via CLIs in Node.js
 
 ### Back-end developer, Liven Tech (2022-2024)
 
@@ -74,11 +75,9 @@ In the beginning of my graduation I've joined a **junior enterprise** focused on
 
 # Education
 
-### Pragmatic Studio Courses (2023-2024)
+### Researcher (Volunteer), Distributed Systems Group (UFSCar) (2024-2025)
 
-I took two great courses on [Pragmatic Studio](https://pragmaticstudio.com/) focusing on Elixir/OTP and Phoenix LiveView. With these courses I was able to fully grasp the core concepts in Elixir and OTP and develop a series of interactive UIs using Phoenix Liveview.
-
-You can check out my certificates of conclusion at my [alumni page](https://pragmaticstudio.com/alumni/lu%C3%ADs-simas-l-sv).
+This research group is focused in researching and developing software that plays a key role in the foundation of public clouds. In my time as a volunteer researcher, I led a research team focused in automating the deployment and operations of [Incus](https://github.com/lxc/incus) in bare metal servers by developing a [Juju charm](https://github.com/cloudlabs-ufscar/incus-charm). Besides that, I've also contributed new features to the Incus project.
 
 ### Introduction to Functional Programming (UTFPR) (2021)
 
@@ -88,10 +87,16 @@ During this course I've [implemented](https://github.com/luissimas/analytic_tabl
 
 Besides that, I've [presented a talk](https://youtu.be/rTL4TtpdjIE?t=1573) about the basics of OCaml and the joy of working with algebraic data types and pattern matching on a statically typed language.
 
-### Computer Science bachelor (UFSCar) (2020-Present)
+### Computer Science bachelor (UFSCar) (2020-2025)
 
 During my computer science bachelor course at UFSCar, I was actively engaged in extracurricular activities such as extension groups. It's also been a great opportunity to dive deeper in computer science fundamental, such as compilers, operating systems and cybersecurity.
 
+### Pragmatic Studio Courses (2023-2024)
+
+I took two great courses on [Pragmatic Studio](https://pragmaticstudio.com/) focusing on Elixir/OTP and Phoenix LiveView. With these courses I was able to fully grasp the core concepts in Elixir and OTP and develop a series of interactive UIs using Phoenix Liveview.
+
+You can check out my certificates of conclusion at my [alumni page](https://pragmaticstudio.com/alumni/lu%C3%ADs-simas-l-sv).
+
 ### High School & Technical Certification (IFSP) (2017-2019)
 
-I've attended to a high school that included an integrated technical course on software development. During this period I had the opportunity not only to **build solid technical foundations**, but also to engage in extracurricular activities, mostly in **cultural events**.
+I've attended to a high school that included an integrated technical course on software development. During this period I had the opportunity not only to build solid technical foundations, but also to engage in extracurricular activities, mostly in cultural events.
