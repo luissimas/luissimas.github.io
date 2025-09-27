@@ -1,0 +1,40 @@
+baseURL: https://luissimas.github.io/
+languageCode: en-us
+title: Luís Simas
+theme: hextra
+
+defaultContentLanguage: en
+languages:
+  en:
+    languageName: English
+    weight: 1
+  pt-br:
+    languageName: Português
+    weight: 2
+
+params:
+  navbar:
+    displayLogo: false
+
+menu:
+  main:
+    - name: Blog
+      pageRef: /blog
+      weight: 1
+    - name: About
+      pageRef: /about
+      weight: 2
+    - name: Search
+      weight: 3
+      params:
+        type: search
+    - name: GitHub
+      weight: 4
+      url: "https://github.com/luissimas"
+      params:
+        icon: github
+    - name: Linkedin
+      weight: 5
+      url: "https://www.linkedin.com/in/luis-simas"
+      params:
+        icon: linkedin

@@ -11,7 +11,7 @@ Oi! Meu nome é Luís e trabalho como desenvolvedor de software. Sou apaixonado 
 - Melhorar em diversas áreas
 - Aprender mais sobre linguística e filosofia
 
-A ideia desse site é ser um lugar para compartilhar algumas coisas, principalmente através dos [meus blog posts]({{< ref "/posts" >}} "Blog posts"). Essa página é principalmente um resumo da minha experiência profissional e educação. Se quiser entrar em contato ou discutir algo, pode enviar um e-mail para <luissimas@protonmail.com>.
+A ideia desse site é ser um lugar para compartilhar algumas coisas, principalmente através dos meus blog posts. Essa página é principalmente um resumo da minha experiência profissional e educação. Se quiser entrar em contato ou discutir algo, pode enviar um e-mail para <luissimas@protonmail.com>.
 
 # Experiência Profissional
 
