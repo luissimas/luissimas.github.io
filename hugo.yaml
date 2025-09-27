@@ -4,6 +4,7 @@ title: Luís Simas
 theme: hextra
 
 summaryLength: 30
+enableGitInfo: true
 
 params:
   navbar:
@@ -13,10 +14,11 @@ params:
       displayTags: true
   toc:
     displayTags: true
+  displayUpdatedDate: true
+  dateFormat: "January 2, 2006"
   comments:
     enable: false
     type: giscus
-
     giscus:
       repo: "luissimas/luissimas.github.io"
       repoId: R_kgDOKs-3vQ
