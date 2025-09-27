@@ -3,6 +3,8 @@ languageCode: en-us
 title: Luís Simas
 theme: hextra
 
+summaryLength: 30
+
 params:
   navbar:
     displayLogo: false
