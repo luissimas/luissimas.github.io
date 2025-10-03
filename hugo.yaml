@@ -49,6 +49,8 @@ menu:
         icon: linkedin
 
 markup:
+  highlight:
+    style: github-dark
   goldmark:
     renderer:
       unsafe: true
