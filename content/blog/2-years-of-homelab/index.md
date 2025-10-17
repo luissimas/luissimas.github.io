@@ -7,26 +7,24 @@ tags:
   - homelab
 ---
 
-It's been almost 2 years since I started my Homelab project, and it's been a great journey!
+2 years ago I started my Homelab project. The idea was to have a practical long-term project in which I could learn more about Kubernetes and infrastructure in general. It's been a great journey!
+
+In this post, I'll describe the current state of my setup and highlight a few key things I learned along the way. I plan on doing some big changes in the near future, so this post will also serve as a way to reflect about what I like about this setup and what could be improved.
 
 My setup changed a lot over the time, but recently it has stabilized quite a bit and I rarely change it in any significant way. This current iteration of my Homelab fulfills the following properties:
 
-- GitOps: everything is deployed and reproducible with FluxCD
+- GitOps: everything is declarative and reproducible with FluxCD
 - Secrets are encrypted and stored in the git repository
 - All services have valid SSL certificates issued by Let's Encrypt
 - Hardware acceleration enabled for video transcoding
 - Observability for both the services and the node itself
 - It's fun :)
 
-In this post, I'll describe the current state of my setup and highlight a few key learnings along the way. I plan on doing some big changes in the near future, so this post will also serve as a way to reflect about what I like about this setup and what could be improved.
+If you want to check out the details about my setup, check out [the GitHub repository](https://github.com/luissimas/homelab). Since I'm using GitOps, everything that I run is declared in this repository.
 
 ![Glance homepage for my Homelab](glance-screenshot.png)
 
 My Homelab runs as single node Kubernetes cluster (I'm using K3s) that hosts all my services. The Kubernetes deployments and configuration are entirely managed in a GitOps workflow, using FluxCD. The OS running in the node is Ubuntu Server 22.04. Besides the main K3s process, the node also runs Tailscale to setup a peer-to-peer VPN from my client devices to my server. All of this runs in a used Mini PC that sits quietly under my desk.
-
-## Why I started a homelab
-
-Mostly to learn new things
 
 ## What I'm currently running
 
@@ -43,6 +41,7 @@ I currently have about 47 pods with 120 containers running in my cluster. Most o
 Here's a non exhaustive list of the services that I'm currently running:
 
 - Jellyfin
+- Glance
 - Arr stack
 - Mealie
 - Headlamp
@@ -77,31 +76,59 @@ The end result is that I can access my server from anywhere in the world, not on
 
 If you are curious, check out [how Tailscale works](https://tailscale.com/blog/how-tailscale-works), I think it's pretty great. There are some alternatives that solve the "proprietary coordinator service" problem, such as NetBird. I just never felt the need to explore other solutions.
 
-## The good parts
+## Things that I like
+
+The main goal of having a Homelab 
 
 ### Learning Kubernetes
 
-What operators I'm using
+So far I'd say this has been the biggest benefit of my Homelab. One of the main goals when starting it was to learn the basics of Kubernetes and get some experience with managing infrastructure. And I can say for sure that I've learned a lot in these past 2 years.
 
-- cert-manager + duckdns
-- sealed secrets
-- cloudnativepg
-- kube-prometheus-stack
+For me, K3s hits the sweet spot between being approachable enough for beginners but also leaving room for exploration with different components. The default CSI and CNI providers work great out of the box, but we can easily add more providers to explore different options. I can confidently say that I never felt limited by K3s at all.
+
+I haven't explored much of the options in the CSI and CNI space yet. Since I have a single node, K3s's defaults are serving me very well. With that said, I've installed some extra operators in my cluster. Here's a non exhaustive list:
+
+- cert-manager for SSL certificates
+- cloudnative-pg for PostgreSQL databases
+- intel-device-plugin to detect my intel GPU and setup its passthrough to enable hardware accelerated video transcoding
+- reflector to make the SSL certificate secrets available in different namespaces
+- sealed-secrets to encrypt and decrypt the secrets in my cluster, enabling me to commit the encrypted secrets to git
+- prometheus-operator and a bunch of other observability services
+
+Maintaining this Homelab and troubleshooting the occasional issues has taught me a lot about Kubernetes, and I feel like I've just scratched the surface of what it has to offer.
+
+### "Real" SSL certificates everywhere
+
+This might seem small thing, but it brings me a lot of joy: all my services have a valid, Let's Encrypt signed certificate without being exposed to the internet. Having "real" (i.e. non self signed) SSL certificates is a non negotiable to me. Using self signed certificates and having to configure your own CA in every client device just feels hacky, I don't like it.
+
+Issuing SSL certificates for publicly exposed services is quite simple and tools like cert-manager and certbot deal with that very easily. This makes sense, as that's a very common use case for most services. Things get a bit tricky when you want to have valid SSL certificates but don't want to expose your services to the internet. The DNS-01 challenge solves that, and I have a [blog post](../homelab-ssl) dedicated to setting it up with Caddy.
+
+Since I'm using cert-manager, I use a [DuckDNS webhook implementation](https://github.com/joshuakraitberg/cert-manager-webhook-duckdns) to enable automatic provisioning and renewal of all the SSL certificates in my cluster.
 
 ### Enabling new projects
 
-One of the most interesting benefits of having a Homelab is that is enables other projects. Having your own infrastructure to run applications without any additional cost opens up a lot of possibilities. I saw myself creating tiny services such as [zettelkasten exporter](https://github.com/luissimas/zettelkasten-exporter).
+One not immediately obvious benefit of a Homelab is that it enables other projects. Owning my own infrastructure to run applications has really motivated me to develop tiny services, even tho they will probably be used just by me. I probably wouldn't have created [zettelkasten exporter](https://github.com/luissimas/zettelkasten-exporter) if I had to rent cloud infrastructure to run it.
 
-## The bad parts
+## Things that I want to improve
 
-### Learning Kubernetes
+Nothing is perfect. There are some parts of my setup that currently bother me. I expect to address those in the future.
 
-### Hardware transcoding
+### Credentials for each service
 
-### Random hardware failures
+There's no single identity provider in my Homelab. This means that I have to login into each service with their own set of credentials. It'd be really nice to share a single user and session between all my services.
 
-## What's next
+### Limited host flexibility
 
-- SSO for my services
-- K3s running in Incus container
-- Hardware upgrades
+By running K3s directly on the bare metal host, I loose some flexibility to mess around with the host itself.
+
+I want to have the ability to experiment with other Linux distros, add more nodes to my cluster to test HA scenarios, etc.
+
+I plan on using Incus to get more flexibility. Running K3s in an LXC container and then being able to spin up new LXC containers or VMs to explore with different setups.
+
+## Conclusion
+
+Having a Homelab is really fun. And it's also pretty easy to get started. All it takes is curiosity, some old hardware and a lot of patience to debug things. Chances are that you already have everything to get started.
+
+That's it for my current setup. Feel free to leave any questions or suggestions in the comments below (seriously tho, It'd be really nice to test the comment system setup in this blog).
+
+Thanks for reading!
