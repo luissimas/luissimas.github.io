@@ -1,7 +1,6 @@
 ---
-title: '2 Years of homelabbing'
-date: '2025-10-15'
-draft: true
+title: '2 Years of Homelabbing'
+date: '2025-11-01'
 comments: true
 tags:
   - homelab
