@@ -8,37 +8,68 @@ tags:
   - kubernetes
 ---
 
-In my Homelab Kubernetes cluster, I run several stateful applications that store their data locally in persistent volumes. Recently, I wanted to migrate my old cluster to a new one, with improved hardware and better infrastructure management. I use a GitOps workflow with Flux, so I was confident that I could easily spin up my workloads in the new cluster. But I also didn't want to loose any data in the process, so I had to figure out how to backup and migrate data for stateful Kubernetes applications.
+In my Homelab Kubernetes cluster, I run several **stateful applications** that store their data locally in persistent volumes. Recently, I wanted to migrate my old cluster to a new one, with improved hardware and better infrastructure management. I use a GitOps workflow with Flux, so I was confident that I could easily spin up my workloads in the new cluster. But I also didn't want to loose any data in the process, so I had to figure out how to **backup and migrate data for my stateful Kubernetes applications**. In the process of doing so, I stumbled across Velero.
 
-Then I found out about Velero, and used it to backup my application's data to an external object storage and then restore it to my new cluster. In the end, it worked out really well! I also had to deal with some specific quirks of my setup with K3s and Rancher `local-path-provisioner`, so I decided to write about this process.
+I used Velero to backup my application's data to an external object storage and then restore it to my new cluster. In the end, it worked out really well! I also had to deal with some specific quirks of my setup with K3s and Rancher `local-path-provisioner`, so I decided to write about this process.
 
-In this post, I'll walk you through my process of backing up and restoring the data for the stateful applications in my Homelab using Velero and Flux. This isn't meant to be an exact step-by-step guide. My goal here is to share what I've learned and give you a brief introduction to Velero, and how you can leverage it within a GitOps workflow to perform cluster migrations.
+In this post, I'll walk you through my process of **backing up and restoring** the data for the stateful Kubernetes applications using Velero and Flux. **This isn't meant to be an exact step-by-step guide**. Each Kubernetes setup will have it's own set of concerns and goals, so a migration plan always needs to be tailored to your specific setup and use case. My goal here is to share what I've learned and give you a brief introduction to Velero, and how you can leverage it within a GitOps workflow to perform cluster migrations.
 
-## A few notes on my setup
+## My setup and the plan
 
 Before we get started, I want to set the stage by describing my current Kubernetes setup. You can check everything in the [the GitHub repository](https://github.com/luissimas/homelab), but the relevant bits for this post are:
 
-- I use K3s with the default `local-path-provisioner` storage class
+- I use K3s with Rancher's `local-path-provisioner` storage class
 - I use Flux to power my GitOps workflow, syncing the manifests from my git repository and applying them to my cluster
 - I use the `sealed-secrets` controller to encrypt my secrets, allowing me to commit them to my GitOps repository
 
-With that said, let's get into the migration process!
+I have several Flux Kustomizations that contain different workloads and configurations for my cluster. Their dependencies are best described by this graph:
+
+```mermaid
+graph LR
+    infra-configs -->|depends| infra-controllers
+    core-services -->|depends| infra-configs
+    apps -->|depends| infra-configs
+```
+
+- `infra-controllers` contains all the core controllers and operators in my cluster, such as `cert-manager`, `intel-device-plugin`, `sealed-secrets`, etc
+- `infra-configs` contains custom resources that are provided by the controllers mentioned above, mostly SSL certificates
+- `core-services` contains services that are not user facing, such as my monitoring stack (Prometheus, Grafana, Loki), Headlamp and Velero
+- `apps` contains the actual user facing applications for my Homelab, such as Mealie, Jellyfin, Arr stack, etc
+
+For this migration, I only cared about backing up the data for the `apps` Kustomization. The only other thing I had to backup was the private encryption key for my `sealed-secrets` controller. It's a simple process that is very well documented [the project's README](https://github.com/bitnami-labs/sealed-secrets?tab=readme-ov-file#how-can-i-do-a-backup-of-my-sealedsecrets), so I won't get into that in this post.
+
+With all of this, my plan was to:
+
+1. Backup my sealed-secrets keys
+2. Create the storage resources in Azure to host the backups for my PVs
+3. Install and configure Velero on the current cluster
+4. Create the backup
+5. Deploy the new cluster
+6. Restore the sealed-secrets key
+7. Bootstrap Flux, pausing the reconciliation for the `apps` Kustomization. This prevents Flux from creating the PVCs before we get the chance to restore our backups
+8. Install and configure Velero on the new cluster
+9. Restore the PVCs from the Velero backup
+10. Resume Flux reconciliation for the `apps` Kustomization to create the workloads and "adopt" the PVCs created by the backup
+
+In this post, we'll focus on the Velero and Flux bits of this migration.
 
 ## What is Velero?
 
-Velero is a set of tools to **back up and restore** Kubernetes clusters. It can take back ups of the cluster resources, including the state of persistent volumes, and then upload them to an external Object Storage such as S3, Azure Blob Storage and many others.
+Velero is a set of tools to **back up and restore** Kubernetes clusters. It can take back ups of cluster resources, including the state of persistent volumes, and then upload them to an external Object Storage such as S3, Azure Blob Storage and many others. Velero works by providing several **CRDs** to represent backups and their operations. We can then interact with Velero by creating and manipulating those resources in our Kubernetes cluster.
 
-Velero works by providing several CRDs to represent backups and their operations. We can then interact with Velero by creating and manipulating those resources in our Kubernetes cluster.
+Since I'm using GitOps to manage my workloads, I don't need to backup resources such as deployments, services or ingresses. Because of this, I'll focus only on the persistent volume backups capabilities of Velero in this post.
 
-Since I'm using Flux to manage my cluster with a GitOps workflow, I'll focus only on the persistent volume backups capabilities of Velero. All my workloads and other resources are already defined in my git repository and don't really need a backup in this case.
+Velero provide several ways of creating backups of the persistent volumes. If you're using a managed Kubernetes solution from a cloud provider, Velero can use the cloud provider's API to take snapshots of the underlying volumes used by the PVs. If your CSI driver supports snapshotting, it can also use that capability. Since I'm using Racher's `local-path-provisioner`, none of those options are available to me my use case. Luckily, Velero provides a **File System Volume Backup feature**, which can be used for CSI providers that don't support snapshots.
 
-Velero provide several ways of creating backups of the persistent volumes. If you're running on the cloud, Velero can use the cloud provider's API to take snapshots of the volumes. If your CSI driver supports snapshotting, it can also use that capability. Since I'm using Racher's local-path-provisioner, none of those options are available to me my use case. Luckily, Velero provides a file system backup feature, which acts directly at the filesystem level.
+A key thing is that **Velero uses the object storage as the source of truth**, not the cluster resources. This means that if there's a backup in the object storage but no matching `Backup` resource in the cluster, Velero will create it. This is perfect for migration use cases, as we can simply install Velero on our new cluster, point it to the object storage with the existing backups and let the controller create the `Backup` resources automatically.
 
-A key thing is that Velero uses the Object Storage as the source of truth, not the cluster resources. This means that if there's a backup in the Object Storage but no custom `Backup` resource in the cluster to represent it, Velero will create it. This is perfect for migration use cases, as we can simply install Velero in our new cluster, point it to the Object Storage with the existing backups and let the controller create the `Backup` resources automatically.
+## Performing the migration
 
-## Setting up the infrastructure
+With the basics out of the way, let's get into the process of performing the actual migration.
 
-We'll use Azure Blob Storage in this post, but you can use any of the [providers supported by Velero](https://velero.io/docs/v1.17/supported-providers/).
+### Setting up the infrastructure
+
+The first step is to setup the storage infrastructure for our backups. I'll use Azure Blob Storage for this post, but you can use any of the [providers supported by Velero](https://velero.io/docs/v1.17/supported-providers/).
 
 We'll keep things simple and use storage account access keys for authorization, but you can (and should!) setup an Entra ID service principal to have a more fine grained control over the access Velero has to your storage account.
 
@@ -89,10 +120,10 @@ $ az group create --name homelab --location chilecentral
 $ az deployment group create -g homelab -f main.bicep
 ```
 
-Once the deployment is complete, we can fetch the storage account ID and one of its keys. We'll put the key value in a credentials file that we'll then use to create a secret. Velero will use this secret to fetch the credentials to authenticate with Azure Blob Storage.
+Once the deployment is complete, we can fetch the storage account ID and one of its keys. We'll put the key value in a credentials file that we'll then use to create a secret. Velero will use this secret to fetch the credentials to authenticate with Azure Blob Storage. If you're using other object storage, you'll have to consult the Velero docs to check which authentication methods are supported and how to configure them in the credentials file.
 
 ```shell
-$ AZURE_STORAGE_ACCOUNT_ID=homelabn644edmi6woce
+$ AZURE_STORAGE_ACCOUNT_ID=$(az deployment group show --name main -g homelab --query properties.outputs.storageAccountName.value -o tsv)
 $ AZURE_STORAGE_ACCOUNT_ACCESS_KEY=$(az storage account keys list --account-name $AZURE_STORAGE_ACCOUNT_ID --query "[?keyName == 'key1'].value" -o tsv)
 $ cat << EOF  > ./credentials-velero
 AZURE_STORAGE_ACCOUNT_ACCESS_KEY=${AZURE_STORAGE_ACCOUNT_ACCESS_KEY}
@@ -100,13 +131,11 @@ AZURE_CLOUD_NAME=AzurePublicCloud
 EOF
 ```
 
-## Installing Velero
+### Installing Velero
 
-The next step is to install the Velero components in our existing cluster. The Velero CLI provides a `velero install` command that conveniently generates all manifests and applies them to the cluster. But since I'm using Flux, I opted to stay within the GitOps flow and install Velero declaratively by creating a `HelmRelease` resource.
+The next step is to install the Velero components in our existing cluster. The Velero CLI provides a `velero install` command that conveniently generates all manifests and applies them to the cluster. But since I'm using Flux, I opted to stay within the GitOps flow and install Velero declaratively by creating a `HelmRelease` resource. To do this, we'll need some resources.
 
-We need four resources
-
-A namespaces to install Velero into:
+A namespace to install Velero:
 
 ```yaml {filename=namespace.yaml}
 apiVersion: v1
@@ -115,7 +144,7 @@ metadata:
   name: velero
 ```
 
-The helm repository:
+The VMware Tanzu helm repository:
 
 ```yaml {filename=repository.yaml}
 apiVersion: source.toolkit.fluxcd.io/v1beta2
@@ -128,19 +157,27 @@ spec:
   url: https://vmware-tanzu.github.io/helm-charts
 ```
 
-The secret containing the credentials that allow Velero to authenticate with the chosen object storage. Here we'll use the `credentials-velero` file we created in the previous step. I'm using `sealed-secrets` to encrypt my secrets, but you should adjust this step to create the secret in the appropriate way for your setup. The only important thing is that the secret should have a single key with a value containing the entire contents of the `credentials-velero` file.
+The secret containing the credentials that allow Velero to authenticate with the chosen object storage. Here we'll use the `credentials-velero` file we created in the previous step. I'm using `sealed-secrets` to encrypt my secrets, but you should adjust this step to create the secret in the appropriate way for your setup. The only important thing is that the secret should have **a single key with a value containing the entire contents of the `credentials-velero` file**.
 
 ```shell
 kubectl create secret generic cloud-credentials \
        --from-file=cloud=credentials-velero \
        --dry-run=client \
+       --namespace velero \
        -o yaml | \
        kubeseal \
        --controller-namespace sealed-secrets \
        -o yaml > secret-sealed.yaml
 ```
 
-Then, we need to create the helm release itself. The important things here are
+Then, we need to create the helm release itself. The values we provide perform the following configurations:
+
+1. Enable the node agent. **This is required to perform file system volume backups**
+2. Reference the `cloud-credentials` secret we've just created in the previous step
+3. Configure a backup storage location using our Azure container name, storage account name, subscription ID and the name of the env var containing the storage account access key within our credentials file secret
+4. Create an init container to setup the Microsoft Azure Velero plugin
+
+There's a decent amount of configuration here, but it's everything that we need to setup Velero with Azure.
 
 ```yaml {filename=release.yaml}
 apiVersion: helm.toolkit.fluxcd.io/v2beta2
@@ -184,7 +221,7 @@ spec:
             name: plugins
 ```
 
-And finally, a Kustomization to apply the resources via Flux
+And finally, we tie everything up with a Kustomization to apply the resources via Flux. I then referenced this Kustomization in my `core-services` Kustomization.
 
 ```yaml {filename=kustomization.yaml}
 apiVersion: kustomize.config.k8s.io/v1beta1
@@ -196,33 +233,25 @@ resources:
   - release.yaml
 ```
 
-- Create env file and create the secret
-- Create the helm release manifest
-- Create the kustomization
+After committing and pushing those changes to our git repository, Flux will sync and apply those manifests to our cluster. At the end, we should be able to verify that we have a `BackupStorageLocation` custom resource in the `Available` state in the `velero` namespace. We can check this with either `kubectl` or the `velero` CLI.
 
-After committing and pushing those changes to our git repository, Flux will sync and apply those manifests to our cluster. At the end, we should be able to verify that we have a `BackupStorageLocation` custom resource in the `Available` state in the `velero` namespace.
+```shell
+$ velero backup-location get
+NAME      PROVIDER   BUCKET/PREFIX   PHASE       LAST VALIDATED                  ACCESS MODE   DEFAULT
+default   azure      velero          Available   2025-11-29 16:52:15 -0300 -03   ReadWrite     true
 
-```shell {hl_Lines=9}
 $ kubectl get backupstoragelocations.velero.io -n velero
-TODO: get output
-$ kubectl describe backupstoragelocations.velero.io -n velero default
-Name:         default
-Namespace:    velero
-...
-Kind:         BackupStorageLocation
-...
-Status:
-...
-  Phase:                 Available
+NAME      PHASE       LAST VALIDATED   AGE   DEFAULT
+default   Available   23s              29s   true
 ```
 
 Now that Velero is setup and can access our object storage, we need to actually create the backups.
 
-## File System Volume Backups
+### File System Volume Backups
 
-I'm using Rancher's `local-path-provisioner` as my storage class, and it does not support snapshotting of persistent volumes. Because of this, we'll have to resort to Velero's File System Volume Backups feature, which creates a backup of the filesystem contents of the PV, as opposed to a block-level snapshot.
+I'm using Rancher's `local-path-provisioner` as my storage class, and it does not support snapshotting of persistent volumes. Because of this, we'll have to resort to Velero's File System Volume Backups feature, which creates a backup of the filesystem contents of the PV, as opposed to a block-level snapshot of the volume.
 
-By default, Velero does not take file system volume backups. We need to explicitly opt-in for the feature for each volume we want to backup using this feature. We do that by annotating all pods with the mounted volume with the annotation `backup.velero.io/backup-volumes` and setting its value to a comma-separated list of mounted volumes that we want to backup. For example, here's my mealie deployment manifest:
+By default, Velero does not take file system volume backups. **We need to explicitly opt-in for the feature for each volume we want to backup using this feature**. We do that by annotating all pods with the mounted volume with the annotation `backup.velero.io/backup-volumes` and setting its value to a comma-separated list of mounted volumes that we want to backup. As an example, here's how I annotated my mealie deployment manifest to opt-in for file system volume backups of the `mealie-data` PVC:
 
 ```yaml {hl_Lines=[18,31]}
 apiVersion: apps/v1
@@ -260,7 +289,7 @@ spec:
             claimName: mealie-data
 ```
 
-## Creating the backup
+### Creating the backup
 
 Once all deployments are annotated for using file system volume backup, we can create the actual `Backup` resource with Velero. After all the setup we've done so far, this is actually the simplest step. We simply run `velero backup create <name>` and specify which namespaces should be included in the backup. In my case, I wanted to backup the applications from the `media` and `app` namespaces.
 
@@ -268,50 +297,55 @@ Once all deployments are annotated for using file system volume backup, we can c
 $ velero backup create apps --include-namespaces media,mealie
 ```
 
-After creating the backup, we should be able to see that a new `Backup` custom resource is present in the `velero` namespace. We can use `velero backup describe <name>` to see details about the backup and check its state. After a while, it should have the `Completed` state.
+This command will 
 
-```shell {hl_Lines=13}
-$ kubectl get backups.velero.io -n velero
-NAME   AGE
-apps   7d
-$ velero backup describe apps
-velero backup describe apps
+After creating the backup, we should be able to see that a new `Backup` custom resource is present in the `velero` namespace. We can use `velero backup describe <name> --details` to see details about the backup and check its state. After all data is backed up and uploaded to the object storage, the backup will have the `Completed` state.
+
+```shell {hl_Lines=8}
+$ velero backup get
+NAME   STATUS      ERRORS   WARNINGS   CREATED                         EXPIRES   STORAGE LOCATION   SELECTOR
+apps   Completed   0        1          2025-11-29 16:53:50 -0300 -03   29d       default            <none>
+$ velero backup describe apps --details
 Name:         apps
 Namespace:    velero
-Labels:       velero.io/storage-location=default
-Annotations:  velero.io/resource-timeout=10m0s
-              velero.io/source-cluster-k8s-gitversion=v1.29.3+k3s1
-              velero.io/source-cluster-k8s-major-version=1
-              velero.io/source-cluster-k8s-minor-version=29
+...
 Phase:  Completed
+...
 Namespaces:
   Included:  media, mealie
   Excluded:  <none>
 ...
+Backup Volumes:
+  Velero-Native Snapshots: <none included>
+
+  CSI Snapshots: <none included>
+
+  Pod Volume Backups - kopia:
+    Completed:
+      mealie/mealie-54bd4b7965-fq77k: data
+      media/bazarr-7676f6bd7b-k8rp8: config
+      media/jellyfin-8445cc444f-pk6r5: config
+      media/prowlarr-7c954dc4cf-2dn9g: config
+      media/qbittorrent-5dc569dc78-j6gsv: config
+      media/radarr-5cc4bcb5c-mf56h: config
+      media/readarr-5544c8cbd6-zdzcw: config
+      media/sonarr-5477f98694-98k4k: config
+...
 ```
 
-As a last check, we can also verify that the blobs were created in out Azure storage container:
+As a last check, it's also worth verifying that the blobs were created in the Azure Blob Storage container. We should have a `velero` and a `kopia` directory in the container, both containing several objects. Velero relies on Kopia to perform the file system volume backups.
 
-```shell
-$ az storage blob list --account-name $AZURE_STORAGE_ACCOUNT_ID --container velero -o table
-```
+With this, we have successfully created a backup of all resources in our namespace, including our persistent volumes. We can exclude resources such as deployments and services from this backup, but I find it safer and easier to just backup everything, and then selectively restore resources later if needed.
 
-Notice that we have a `velero` and a `kopia` directory. This is because Velero relies on Kopia to perform the file system backups.
+Now, we are free to tear down our existing Kubernetes cluster and deploy a new one. I won't get into this process because it'd go way out of the scope of this post. Once we have our new cluster deployed, we can finally restore the backup.
 
-With this, we have successfully created a backup of our persistent volumes. Now, we are free to tear down our existing Kubernetes cluster and deploy a new one. I won't get into this process because it'd go way out of the scope of this post. Once we have our new cluster deployed, we can finally restore the backup.
+### Bootstrapping Flux
 
-## Restoring the backups
+Now that we have a fresh Kubernetes cluster, it's time to bootstrap Flux to install our workloads. An important thing that I did at this step was to **pause the reconciliation for the `apps` Kustomization**. This ensures that Flux won't create the PVCs for our apps, as we want to create them manually from our Velero backup.
 
-We'll need to:
+To suspend the Kustomization, I just edited its file directly
 
-1. Suspend the Flux Kustomization for the apps we want to restore. This prevents Flux from creating new PVCs for our workloads. We want to be able to create our PVs and PVCs by restoring Velero's backup instead
-2. Install Flux in the new cluster and let it sync the Kustomizations that were not suspended by us. This will include Velero's Kustomization
-3. Restore the Velero backup to create the PVCs and its PVs with the existing data
-4. Re-enable the Kustomization for the apps we suspendd in step 1. Flux will then start to sync the state for those apps, creating our deployments and resources. Since the PVCs were restored and already exist in the cluster, Flux will "adopt" those existing resources instead of creating new ones
-
-To suspend the Kustomization:
-
-```yaml {hl_Lines=18}
+```yaml {filename="clusters/homelab/apps.yaml" hl_Lines=18}
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
 metadata:
@@ -332,7 +366,7 @@ spec:
   suspend: true
 ```
 
-Then, to bootstrap Flux:
+Then, we bootstrap Flux in the new cluster:
 
 ```shell
 $ GITHUB_TOKEN=<your-token> flux bootstrap github \
@@ -343,27 +377,19 @@ $ GITHUB_TOKEN=<your-token> flux bootstrap github \
                                   --path=<cluster-path-in-repo>
 ```
 
-Then, we wait for Flux to reconcile our resources. In the end, we should be able to verify that all our Kustomizations are ready, and the `apps` Kustomization is suspended.
+Then, we wait for Flux to reconcile our resources. Note that this includes the Velero Helm release, with the configurations we defined in previous steps. In the end, we should be able to verify that all our Kustomizations are ready, and the `apps` Kustomization is suspended.
 
-```shell
-$ flux get kustomizations
-NAME                    REVISION                SUSPENDED       READY   MESSAGE
-apps                    main@sha1:458f2c63      True           Unknown Reconciliation in progress
-core-services           main@sha1:458f2c63      False           True    Applied revision: main@sha1:458f2c63
-flux-system             main@sha1:458f2c63      False           True    Applied revision: main@sha1:458f2c63
-infra-configs           main@sha1:458f2c63      False           True    Applied revision: main@sha1:458f2c63
-infra-controllers       main@sha1:458f2c63      False           True    Applied revision: main@sha1:458f2c63
-```
+### Restoring the backup
 
 Now that our core infrastructure controllers (including Velero) are installed, we can check that the backup resource we took in the old cluster is present in the new cluster:
 
 ```shell
 $ velero backup get
 NAME   STATUS      ERRORS   WARNINGS   CREATED                         EXPIRES   STORAGE LOCATION   SELECTOR
-apps   Completed   0        0          2025-11-15 10:10:49 -0300 -03   17d       default            <none>
+apps   Completed   0        1          2025-11-29 16:53:50 -0300 -03   29d       default            <none>
 ```
 
-Since Velero uses the Object Storage as the source of truth, it was able to check that a backup existed there but not in our new fresh cluster. It then created the backup resource in the cluster, and now we can interact with it.
+Since Velero uses the Object Storage as the source of truth, it was able to check that a backup existed there but not in our new cluster. It then created the backup resource in the cluster, and now we can interact with it.
 
 To restore the backup, we create a new `restore` from our backup:
 
@@ -371,25 +397,18 @@ To restore the backup, we create a new `restore` from our backup:
 $ velero restore create --from-backup apps
 ```
 
-Then, we can list and describe the restore resource to check it's state:
-
-```shell
-$ velero restore get
-$ velero restore describe <restore-name>
-```
-
 After the restore process is complete, we should be able to verify its status as `Completed`:
 
 ```shell
 $ velero restore get
 NAME                  BACKUP   STATUS            STARTED                         COMPLETED                       ERRORS   WARNINGS   CREATED                         SELECTOR
-apps-20251116112235   apps     Completed         2025-11-16 11:22:36 -0300 -03   2025-11-16 11:22:39 -0300 -03   0        0          2025-11-16 11:22:35 -0300 -03   <none>
+apps-20251130112235   apps     Completed         2025-11-30 11:22:36 -0300 -03   2025-11-30 11:22:39 -0300 -03   0        0          2025-11-30 11:22:35 -0300 -03   <none>
 ```
 
 We can then verify that all PVCs were restored and are `Bound`:
 
 ```shell
-$ kubectl get pvc
+$ kubectl get pvc -n media
 NAME                 STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
 bazarr-config        Bound    pvc-08fea9b5-dd07-42a1-a1b7-cda0c7ef3659   500Mi      RWO            local-path     <unset>                 58m
 jellyfin-config      Bound    pvc-a6f6fa51-8062-4c83-9b5a-b0b24355a4d3   500Mi      RWO            local-path     <unset>                 58m
@@ -400,4 +419,10 @@ readarr-config       Bound    pvc-2e9349c4-3975-4b97-b0ba-9b095f8a6145   500Mi  
 sonarr-config        Bound    pvc-ef06a736-93cc-4ae1-9748-9953df3c5143   500Mi      RWO            local-path     <unset>                 58m
 ```
 
-Finally, we can resume the reconciliation for the kustomization we paused in the first step. Flux will then create the new resources and adopt the existing PVCs instead of creating new ones.
+Finally, we can resume the reconciliation for the kustomization we paused in the first step. Flux will then create the new required resources and adopt the existing PVCs instead of creating new ones.
+
+## Conclusion
+
+GitOps is a really nice way of managing Kubernetes resources, and it makes many aspects of migrations like these quite trivial. On the other hand: backing up data is always hard, and Velero performs this task very well. Regardless of the technology you chose for backups, be sure to **continuously test your restore process** to ensure you can actually use your backups if the need arises.
+
+These were some of the steps I went through to migrate my current Kubernetes Homelab cluster to a new one. It was a fairly involved process, but it worked really well thanks to Velero and Flux!
