@@ -8,17 +8,17 @@ tags:
   - kubernetes
 ---
 
-In my Homelab Kubernetes cluster, I run several **stateful applications** that store their data locally in persistent volumes. Recently, I wanted to migrate my old cluster to a new one, with improved hardware and better infrastructure management. I use a GitOps workflow with Flux, so I was confident that I could easily spin up my workloads in the new cluster. But I also didn't want to loose any data in the process, so I had to figure out how to **backup and migrate data for my stateful Kubernetes applications**. In the process of doing so, I stumbled across Velero.
+In my Homelab Kubernetes cluster, I run several **stateful applications** that store their data locally in persistent volumes. Recently, I wanted to migrate my old cluster to a new one, with improved hardware and better infrastructure management. I use a GitOps workflow with Flux, so I was confident that I could easily spin up my workloads in the new cluster. But I also didn't want to lose any data in the process, so I had to figure out how to **backup and migrate data for my stateful Kubernetes applications**. In the process of doing so, I stumbled across Velero.
 
-I used Velero to backup my application's data to an external object storage and then restore it to my new cluster. In the end, it worked out really well! I also had to deal with some specific quirks of my setup with K3s and Rancher `local-path-provisioner`, so I decided to write about this process.
+I used Velero to backup my application's data to an external object storage and then restore it to my new cluster. In the end, it worked out really well! I also had to deal with some specific challenges of my setup, as I'm running Kubernetes in my bare-metal host using K3s and Rancher's `local-path-provisioner` instead of a cloud provider.
 
-In this post, I'll walk you through my process of **backing up and restoring** the data for the stateful Kubernetes applications using Velero and Flux. **This isn't meant to be an exact step-by-step guide**. Each Kubernetes setup will have it's own set of concerns and goals, so a migration plan always needs to be tailored to your specific setup and use case. My goal here is to share what I've learned and give you a brief introduction to Velero, and how you can leverage it within a GitOps workflow to perform cluster migrations.
+In this post, I'll walk you through my process of **backing up and restoring** the data for the stateful Kubernetes applications using Velero and Flux. **This isn't meant to be an exact step-by-step guide**. Each Kubernetes setup will have its own set of concerns and goals, so a migration plan always needs to be tailored to your specific setup and use case. My goal here is to share what I've learned and give you a brief introduction to Velero, and how you can leverage it within a GitOps workflow to perform cluster migrations.
 
 ## My setup and the plan
 
 Before we get started, I want to set the stage by describing my current Kubernetes setup. You can check everything in the [the GitHub repository](https://github.com/luissimas/homelab), but the relevant bits for this post are:
 
-- I use K3s with Rancher's `local-path-provisioner` storage class
+- I use K3s with `local-path-provisioner` storage class
 - I use Flux to power my GitOps workflow, syncing the manifests from my git repository and applying them to my cluster
 - I use the `sealed-secrets` controller to encrypt my secrets, allowing me to commit them to my GitOps repository
 
@@ -57,9 +57,15 @@ In this post, we'll focus on the Velero and Flux bits of this migration.
 
 Velero is a set of tools to **back up and restore** Kubernetes clusters. It can take back ups of cluster resources, including the state of persistent volumes, and then upload them to an external Object Storage such as S3, Azure Blob Storage and many others. Velero works by providing several **CRDs** to represent backups and their operations. We can then interact with Velero by creating and manipulating those resources in our Kubernetes cluster.
 
+{{< figure
+  src="./backup-process.png"
+  alt="The Velero backup process"
+  caption="The Velero backup process. Source: [Velero docs](https://velero.io/docs/v1.5/how-velero-works)"
+>}}
+
 Since I'm using GitOps to manage my workloads, I don't need to backup resources such as deployments, services or ingresses. Because of this, I'll focus only on the persistent volume backups capabilities of Velero in this post.
 
-Velero provide several ways of creating backups of the persistent volumes. If you're using a managed Kubernetes solution from a cloud provider, Velero can use the cloud provider's API to take snapshots of the underlying volumes used by the PVs. If your CSI driver supports snapshotting, it can also use that capability. Since I'm using Racher's `local-path-provisioner`, none of those options are available to me my use case. Luckily, Velero provides a **File System Volume Backup feature**, which can be used for CSI providers that don't support snapshots.
+Velero provides several ways of creating backups of the persistent volumes. If you're using a managed Kubernetes solution from a cloud provider, Velero can use the cloud provider's API to take snapshots of the underlying volumes used by the PVs. If your CSI driver supports snapshotting, it can also use that capability. Since I'm using Rancher's `local-path-provisioner`, none of those options are available for my use case. Luckily, Velero provides a **File System Volume Backup feature**, which can be used for CSI providers that don't support snapshots.
 
 A key thing is that **Velero uses the object storage as the source of truth**, not the cluster resources. This means that if there's a backup in the object storage but no matching `Backup` resource in the cluster, Velero will create it. This is perfect for migration use cases, as we can simply install Velero on our new cluster, point it to the object storage with the existing backups and let the controller create the `Backup` resources automatically.
 
@@ -73,7 +79,7 @@ The first step is to setup the storage infrastructure for our backups. I'll use 
 
 We'll keep things simple and use storage account access keys for authorization, but you can (and should!) setup an Entra ID service principal to have a more fine grained control over the access Velero has to your storage account.
 
-Here's the bicep template that I used to provision all required resources for this migration. We'll create a storage account and a container (aka: bucket) that will store the backup data.
+Here's the bicep template that I used to provision all required resources for this migration. We'll create a storage account and a container (aka: bucket) that will store the backup data. Since Azure storage account names must be globally unique, we're using the `uniqueString` function to generate a unique and consistent string for it.
 
 ```bicep {filename=main.bicep}
 @description('The location in which to deploy the resources.')
@@ -297,8 +303,6 @@ Once all deployments are annotated for using file system volume backup, we can c
 $ velero backup create apps --include-namespaces media,mealie
 ```
 
-This command will 
-
 After creating the backup, we should be able to see that a new `Backup` custom resource is present in the `velero` namespace. We can use `velero backup describe <name> --details` to see details about the backup and check its state. After all data is backed up and uploaded to the object storage, the backup will have the `Completed` state.
 
 ```shell {hl_Lines=8}
@@ -343,7 +347,7 @@ Now, we are free to tear down our existing Kubernetes cluster and deploy a new o
 
 Now that we have a fresh Kubernetes cluster, it's time to bootstrap Flux to install our workloads. An important thing that I did at this step was to **pause the reconciliation for the `apps` Kustomization**. This ensures that Flux won't create the PVCs for our apps, as we want to create them manually from our Velero backup.
 
-To suspend the Kustomization, I just edited its file directly
+To suspend the Kustomization, I added `suspend: true` to its spec and pushed it to my git repository.
 
 ```yaml {filename="clusters/homelab/apps.yaml" hl_Lines=18}
 apiVersion: kustomize.toolkit.fluxcd.io/v1
@@ -391,7 +395,7 @@ apps   Completed   0        1          2025-11-29 16:53:50 -0300 -03   29d      
 
 Since Velero uses the Object Storage as the source of truth, it was able to check that a backup existed there but not in our new cluster. It then created the backup resource in the cluster, and now we can interact with it.
 
-To restore the backup, we create a new `restore` from our backup:
+To restore the data, we create a new `restore` resource from our backup:
 
 ```shell
 $ velero restore create --from-backup apps
@@ -419,10 +423,10 @@ readarr-config       Bound    pvc-2e9349c4-3975-4b97-b0ba-9b095f8a6145   500Mi  
 sonarr-config        Bound    pvc-ef06a736-93cc-4ae1-9748-9953df3c5143   500Mi      RWO            local-path     <unset>                 58m
 ```
 
-Finally, we can resume the reconciliation for the kustomization we paused in the first step. Flux will then create the new required resources and adopt the existing PVCs instead of creating new ones.
+Finally, we can resume the reconciliation for the kustomization we paused in the first step. To do this, I simply removed the `suspend: true` from the Kustomization spec and pushed the changes to my git repository. Flux will then create the new required resources and adopt the existing PVCs instead of creating new ones.
 
 ## Conclusion
 
-GitOps is a really nice way of managing Kubernetes resources, and it makes many aspects of migrations like these quite trivial. On the other hand: backing up data is always hard, and Velero performs this task very well. Regardless of the technology you chose for backups, be sure to **continuously test your restore process** to ensure you can actually use your backups if the need arises.
+GitOps is a really powerful way of managing Kubernetes resources, and it makes many aspects of migrations like these quite trivial. On the other hand: backing up data is always hard, and Velero performs this task very well. Regardless of the technology you chose for backups, be sure to **continuously test your restore process** to ensure you can actually use your backups if the need arises.
 
 These were some of the steps I went through to migrate my current Kubernetes Homelab cluster to a new one. It was a fairly involved process, but it worked really well thanks to Velero and Flux!
