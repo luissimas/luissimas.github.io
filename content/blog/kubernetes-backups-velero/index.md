@@ -256,7 +256,7 @@ Now that Velero is setup and can access our object storage, we need to actually 
 
 I'm using Rancher's `local-path-provisioner` as my storage class, and it does not support snapshotting of persistent volumes. Because of this, we'll have to resort to Velero's File System Volume Backups feature, which creates a backup of the filesystem contents of the PV, as opposed to a block-level snapshot of the volume.
 
-By default, Velero does not take file system volume backups. **We need to explicitly opt-in for the feature for each volume we want to backup using this feature**. We do that by annotating all pods with the mounted volume with the annotation `backup.velero.io/backup-volumes` and setting its value to a comma-separated list of mounted volumes that we want to backup. As an example, here's how I annotated my mealie deployment manifest to opt-in for file system volume backups of the `mealie-data` PVC:
+By default, Velero does not take file system volume backups. **We need to explicitly opt-in for the feature for each volume we want to backup**. We do that by annotating all pods that use the volume with the annotation `backup.velero.io/backup-volumes` and setting its value to a comma-separated list of mounted volumes that we want to backup. As an example, here's how I annotated my mealie deployment manifest to opt-in for file system volume backups of the `mealie-data` PVC:
 
 ```yaml {hl_Lines=[18,31]}
 apiVersion: apps/v1
