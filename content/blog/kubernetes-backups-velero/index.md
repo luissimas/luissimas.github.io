@@ -1,6 +1,6 @@
 ---
 title: 'Migrating Kubernetes clusters with Velero and Flux'
-date: '2025-11-29'
+date: '2025-12-01'
 comments: true
 tags:
   - homelab
